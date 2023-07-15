@@ -1,12 +1,20 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-void write2File(FILE *outputFile, char *word);
+#define RED "\x1b[31m"
+#define RESET "\x1b[0m"
+
+void outputError(int errNum, char *word)； void write2File(FILE *outputFile,
+                                                           char *word);
 void put2File(FILE *outputFile, char c);
 void evalWord(char *word, int isFunc, FILE *outputFile);
-int parseLine(char *line, FILE *outputFile);
-int readFile(FILE *fp, FILE *outputFile);
-int setupFile(FILE **fp, FILE **outputFile, int argc, char const *argv[]);
+void parseLine(char *line, FILE *outputFile);
+void readFile(FILE *fp, FILE *outputFile);
+void setupFile(FILE **fp, FILE **outputFile, int argc, char const *argv[]);
+
+int lineNum = 0;
+int charNum = 0;
 
 int main(int argc, char const *argv[]) {
   FILE *fp;
@@ -25,6 +33,47 @@ int main(int argc, char const *argv[]) {
   return 0;
 }
 
+// エラーを出力して終了する
+void outputError(int errNum, char *word) {
+  printf(RED);
+  switch (errNum) {
+    case 100:
+      printf("Error: f文字列中の {} が閉じられていません.\n");
+      break;
+
+    case 101:
+      printf("Error: f文字列中の {} 内に : がありません.\n");
+      break;
+
+    case 102:
+      printf("Error: f文字列中でフォーマット演算子が指定されていません.\n");
+      break;
+
+    case 400:
+      printf("Error: ファイルが開けません.\n");
+      printf("       ファイル名: %s\n", word);
+      break;
+
+    case 401:
+      printf("Error: 出力ファイルが開けません.\n");
+      printf("       ファイル名: %s\n", word);
+      break;
+
+    default:
+      printf("Error: エラー内容が未定義です.\n");
+      break;
+  }
+
+  if (lineNum != 0) {
+    printf("line %d:%d\n", lineNum, charNum);
+    printf(RESET "  %s\n\n", word);
+  } else {
+    printf(RESET "\n");
+  }
+
+  exit(1);
+}
+
 // ファイルに文字列を書き込む
 void write2File(FILE *outputFile, char *word) {
   fprintf(outputFile, "%s", word);
@@ -34,7 +83,7 @@ void write2File(FILE *outputFile, char *word) {
 void put2File(FILE *outputFile, char c) { fprintf(outputFile, "%c", c); }
 
 // 文字列の変数名をフォーマット指定子に置き換える
-int replaceString(char *word, char *str) {
+void replaceString(char *word, char *str) {
   // f"{hoge:d} {fuga:lf}" -> "%d %d"
   int i = 1;
   int j = 0;
@@ -51,18 +100,20 @@ int replaceString(char *word, char *str) {
       while (1) {
         c = word[i];
         i++;
+        if (c == '}') outputError(101, word);
         if (c == ':') break;
       }
 
       char f = 0;
       char format[5] = {'\0'};
 
+      if (word[i] == '}') outputError(102, word);
       while (1) {
         c = word[i];
         format[f] = c;
 
         if (c == '}') break;
-        if (c == '\0') return 100;
+        if (c == '\0') outputError(100, word);
 
         f++;
         i++;
@@ -74,12 +125,10 @@ int replaceString(char *word, char *str) {
     }
     i++;
   }
-
-  return 0;
 }
 
 // 文字列から変数名を取り出す
-int pickupVariable(char *word, char *vars) {
+void pickupVariable(char *word, char *vars) {
   // f"{hoge:d} {fuga:lf}" -> , hoge, fuga
   int i = 0;
   int j = 0;
@@ -103,7 +152,7 @@ int pickupVariable(char *word, char *vars) {
             c = word[i];
             i++;
 
-            if (c == '\0') return 100;
+            if (c == '\0') outputError(100, word);
           }
           break;
         }
@@ -115,12 +164,10 @@ int pickupVariable(char *word, char *vars) {
     }
     i++;
   }
-
-  return 0;
 }
 
 // f文字列を処理する
-int processFString(char *word, FILE *outputFile) {
+void processFString(char *word, FILE *outputFile) {
   char str[256] = {'\0'};
   replaceString(word, str);
   write2File(outputFile, str);
@@ -128,8 +175,6 @@ int processFString(char *word, FILE *outputFile) {
   char vars[256] = {'\0'};
   pickupVariable(word, vars);
   write2File(outputFile, vars);
-
-  return 0;
 }
 
 // 単語を評価する
@@ -137,7 +182,6 @@ void evalWord(char *word, int isFunc, FILE *outputFile) {
   // f文字列の場合
   if (word[0] == 'f' && word[1] == '"') {
     processFString(word, outputFile);
-    return;
   }
 
   // 関数ではないとき
@@ -157,7 +201,7 @@ void evalWord(char *word, int isFunc, FILE *outputFile) {
 }
 
 // 1行をパースする
-int parseLine(char *line, FILE *outputFile) {
+void parseLine(char *line, FILE *outputFile) {
   int i = 0;
   char word[256] = {'\0'};
 
@@ -169,7 +213,7 @@ int parseLine(char *line, FILE *outputFile) {
       case '\0':
         word[i] = '\0';
         evalWord(word, 0, outputFile);
-        return 0;
+        return;
 
       case '"':
         // 次の " までを文字列として扱う
@@ -207,33 +251,31 @@ int parseLine(char *line, FILE *outputFile) {
     }
     line++;
   }
-
-  return 0;
 }
 
 // ファイルを読み込む
-int readFile(FILE *fp, FILE *outputFile) {
+void readFile(FILE *fp, FILE *outputFile) {
   // 1行ずつ読み込む
   char line[256];
   while (fgets(line, sizeof(line), fp) != NULL) {
+    lineNum++;
     parseLine(line, outputFile);
   }
-  return 0;
 }
 
 // ファイルを開く
-int setupFile(FILE **fp, FILE **outputFile, int argc, char const *argv[]) {
+void setupFile(FILE **fp, FILE **outputFile, int argc, char const *argv[]) {
   // ファイル名が指定されていない場合は終了
   if (argc < 2) {
-    printf("ファイル名を指定してください\n");
-    return -1;
+    char *filename = (char *)argv[1];
+    outputError(400, filename);
   }
 
   // ファイルを開く
   *fp = fopen(argv[1], "r");
   if (*fp == NULL) {
-    printf("\"%s\" ファイルを開けませんでした\n", argv[1]);
-    return -1;
+    char *filename = (char *)argv[1];
+    outputError(400, filename);
   }
 
   // 出力ファイルを開く
@@ -244,8 +286,8 @@ int setupFile(FILE **fp, FILE **outputFile, int argc, char const *argv[]) {
 
   // 出力ファイルを開けなかった場合は終了
   if (*outputFile == NULL) {
-    printf("\"%s\" 出力ファイルを開けませんでした\n", argv[1]);
-    return -1;
+    char *filename = (char *)argv[1];
+    outputError(401, filename);
   }
-  return 0;
+  return;
 }
