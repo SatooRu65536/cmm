@@ -5,8 +5,8 @@
 #define RED "\x1b[31m"
 #define RESET "\x1b[0m"
 
-void outputError(int errNum, char *word)； void write2File(FILE *outputFile,
-                                                           char *word);
+void outputError(int errNum, char *word);
+void write2File(FILE *outputFile, char *word);
 void put2File(FILE *outputFile, char c);
 void evalWord(char *word, int isFunc, FILE *outputFile);
 void parseLine(char *line, FILE *outputFile);
