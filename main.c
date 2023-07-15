@@ -182,6 +182,7 @@ void evalWord(char *word, int isFunc, FILE *outputFile) {
   // f文字列の場合
   if (word[0] == 'f' && word[1] == '"') {
     processFString(word, outputFile);
+    return;
   }
 
   // 関数ではないとき
