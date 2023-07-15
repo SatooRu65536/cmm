@@ -5,28 +5,80 @@
 #define RED "\x1b[31m"
 #define RESET "\x1b[0m"
 
-void outputError(int errNum, char *word);
-void readFile(FILE *fp, FILE *outputFile);
-void setupFile(FILE **fp, FILE **outputFile, int argc, char const *argv[]);
+void addIncluede(FILE *, FILE *);
+void outputError(int, char *);
+void readFile(FILE *, FILE *);
+void setupFile(FILE **, FILE **, char *, char *);
 
 int lineNum = 0;
 int charNum = 0;
 
-int main(int argc, char const *argv[]) {
-  FILE *fp;
-  FILE *outputFile;
+int isNeedStdio = 0;
+int isNeedStdlib = 0;
+int isNeedString = 0;
+int isNeedMath = 0;
 
-  // 入出力ファイルを開く
-  setupFile(&fp, &outputFile, argc, argv);
+int main(int argc, char const *argv[]) {
+  FILE *inputFile;
+  FILE *outFile;
+  FILE *tmpFile;
+
+  char *inputFileName;
+  char *outputFileName = "out.c";
+  char *tmpFileName = "tmp";
+
+  if (argc < 2) {
+    outputError(400, "ファイルが指定されていません.");
+  } else if (argc < 3) {
+    inputFileName = (char *)argv[1];
+  } else {
+    inputFileName = (char *)argv[1];
+    outputFileName = (char *)argv[2];
+  }
+
+  // 入力ファイルとtmpファイルを開く
+  setupFile(&inputFile, &tmpFile, inputFileName, tmpFileName);
 
   // ファイルを読み込む
-  readFile(fp, outputFile);
+  readFile(inputFile, tmpFile);
 
   // ファイルを閉じる
-  fclose(fp);
-  fclose(outputFile);
+  fclose(inputFile);
+  fclose(tmpFile);
+
+  // tmpファイルと出力ファイルを開く
+  setupFile(&tmpFile, &outFile, tmpFileName, outputFileName);
+
+  // inclue　を追加する
+  addIncluede(outFile, tmpFile);
+
+  // ファイルを閉じる
+  fclose(outFile);
+  fclose(tmpFile);
+
+  // tmpファイルを削除する
+  remove("tmp");
 
   return 0;
+}
+
+// include を追加し、出力ファイルを作成する
+void addIncluede(FILE *outFile, FILE *tmpFile) {
+  // 追記するデータをtmpファイルに書き込む
+  if (isNeedStdio) fputs("#include <stdio.h>\n", outFile);
+  if (isNeedStdlib) fputs("#include <stdlib.h>\n", outFile);
+  if (isNeedString) fputs("#include <string.h>\n", outFile);
+  if (isNeedMath) fputs("#include <math.h>\n", outFile);
+
+  if (isNeedStdio || isNeedStdlib || isNeedString || isNeedMath) {
+    fputs("\n", outFile);
+  }
+
+  // tmpファイルのデータを出力ファイルに書き込む
+  char line[256];
+  while (fgets(line, sizeof(line), tmpFile) != NULL) {
+    fputs(line, outFile);
+  }
 }
 
 // エラーを出力して終了する
@@ -71,12 +123,10 @@ void outputError(int errNum, char *word) {
 }
 
 // ファイルに文字列を書き込む
-void write2File(FILE *outputFile, char *word) {
-  fprintf(outputFile, "%s", word);
-}
+void write2File(FILE *file, char *word) { fprintf(file, "%s", word); }
 
 // ファイルに文字を書き込む
-void put2File(FILE *outputFile, char c) { fprintf(outputFile, "%c", c); }
+void put2File(FILE *file, char c) { fprintf(file, "%c", c); }
 
 // 文字列の変数名をフォーマット指定子に置き換える
 void replaceString(char *word, char *str) {
@@ -163,46 +213,137 @@ void pickupVariable(char *word, char *vars) {
 }
 
 // f文字列を処理する
-void processFString(char *word, FILE *outputFile) {
+void processFString(char *word, FILE *tmpFile) {
   char str[256] = {'\0'};
   replaceString(word, str);
-  write2File(outputFile, str);
+  write2File(tmpFile, str);
 
   char vars[256] = {'\0'};
   pickupVariable(word, vars);
-  write2File(outputFile, vars);
+  write2File(tmpFile, vars);
 }
 
-void processIdend(char *word, FILE *outputFile) {
-  if (strcmp(word, "p") == 0 || strcmp(word, "print") == 0) {
-    write2File(outputFile, "printf");
-  } else if (strcmp(word, "s") == 0 || strcmp(word, "scan") == 0) {
-    write2File(outputFile, "scanf");
-  } else {
-    write2File(outputFile, word);
+// 必要なライブラリを判定する
+void checkLib(char *word) {
+  if (isNeedStdio != 1) {
+    if (strcmp(word, "p") == 0)
+      isNeedStdio = 1;
+    else if (strcmp(word, "print") == 0)
+      isNeedStdio = 1;
+    else if (strcmp(word, "s") == 0)
+      isNeedStdio = 1;
+    else if (strcmp(word, "scan") == 0)
+      isNeedStdio = 1;
+
+    if (isNeedStdio == 1) return;
+  }
+
+  if (isNeedStdlib != 1) {
+    if (strcmp(word, "rand") == 0)
+      isNeedStdlib = 1;
+    else if (strcmp(word, "random") == 0)
+      isNeedStdlib = 1;
+    else if (strcmp(word, "srand") == 0)
+      isNeedStdlib = 1;
+
+    if (isNeedStdlib == 1) return;
+  }
+
+  if (isNeedString != 1) {
+    if (strcmp(word, "strlen") == 0)
+      isNeedString = 1;
+    else if (strcmp(word, "strcmp") == 0)
+      isNeedString = 1;
+    else if (strcmp(word, "strcpy") == 0)
+      isNeedString = 1;
+    else if (strcmp(word, "strcat") == 0)
+      isNeedString = 1;
+
+    if (isNeedString == 1) return;
+  }
+
+  if (isNeedMath != 0) {
+    if (strcmp(word, "sin") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "cos") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "tan") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "asin") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "acos") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "atan") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "atan2") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "sinh") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "cosh") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "tanh") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "exp") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "log") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "log10") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "pow") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "sqrt") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "ceil") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "floor") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "fabs") == 0)
+      isNeedMath = 1;
+    else if (strcmp(word, "fmod") == 0)
+      isNeedMath = 1;
+
+    if (isNeedMath == 1) return;
   }
 }
 
+// 識別子を処理する
+void processIdend(char *word, FILE *tmpFile) {
+  if (strcmp(word, "p") == 0 || strcmp(word, "print") == 0) {
+    write2File(tmpFile, "printf");
+  } else if (strcmp(word, "s") == 0 || strcmp(word, "scan") == 0) {
+    write2File(tmpFile, "scanf");
+  } else if (strcmp(word, "Main") == 0) {
+    write2File(tmpFile, "int main");
+  } else if (strcmp(word, "Arg") == 0) {
+    write2File(tmpFile, "int argc, char const *argv[]");
+  } else {
+    write2File(tmpFile, word);
+  }
+
+  checkLib(word);
+}
+
 // 単語を評価する
-void evalWord(char *word, int isFunc, FILE *outputFile) {
+void evalWord(char *word, int isFunc, FILE *tmpFile) {
   // f文字列の場合
   if (word[0] == 'f' && word[1] == '"') {
-    processFString(word, outputFile);
+    processFString(word, tmpFile);
     return;
   }
 
   // 関数ではないとき
   if (!isFunc) {
-    write2File(outputFile, word);
+    if (strcmp(word, "M_PI") == 0) isNeedMath = 1;
+    write2File(tmpFile, word);
     return;
   }
 
   // 関数名を変換, またはそのまま出力
-  processIdend(word, outputFile);
+  processIdend(word, tmpFile);
 }
 
 // 1行をパースする
-void parseLine(char *line, FILE *outputFile) {
+void parseLine(char *line, FILE *tmpFile) {
   int i = 0;
   char word[256] = {'\0'};
 
@@ -213,7 +354,13 @@ void parseLine(char *line, FILE *outputFile) {
     switch (c) {
       case '\0':
         word[i] = '\0';
-        evalWord(word, 0, outputFile);
+        evalWord(word, 0, tmpFile);
+        return;
+
+      case '\n':
+        word[i] = '\0';
+        evalWord(word, 0, tmpFile);
+        write2File(tmpFile, "\n");
         return;
 
       case '"':
@@ -240,8 +387,8 @@ void parseLine(char *line, FILE *outputFile) {
       case '}':
       case ',':
         word[i] = '\0';
-        evalWord(word, isFunc, outputFile);
-        put2File(outputFile, c);
+        evalWord(word, isFunc, tmpFile);
+        put2File(tmpFile, c);
         i = 0;
         break;
 
@@ -255,40 +402,22 @@ void parseLine(char *line, FILE *outputFile) {
 }
 
 // ファイルを読み込む
-void readFile(FILE *fp, FILE *outputFile) {
+void readFile(FILE *fp, FILE *tmpFile) {
   // 1行ずつ読み込む
   char line[256];
   while (fgets(line, sizeof(line), fp) != NULL) {
     lineNum++;
-    parseLine(line, outputFile);
+    parseLine(line, tmpFile);
   }
 }
 
 // ファイルを開く
-void setupFile(FILE **fp, FILE **outputFile, int argc, char const *argv[]) {
-  // ファイル名が指定されていない場合は終了
-  if (argc < 2) {
-    char *filename = (char *)argv[1];
-    outputError(400, filename);
-  }
-
+void setupFile(FILE **rFile, FILE **wFile, char *rFilename, char *wFilename) {
   // ファイルを開く
-  *fp = fopen(argv[1], "r");
-  if (*fp == NULL) {
-    char *filename = (char *)argv[1];
-    outputError(400, filename);
-  }
+  *rFile = fopen(rFilename, "r");
+  if (*rFile == NULL) outputError(400, rFilename);
 
   // 出力ファイルを開く
-  if (argc < 3)
-    *outputFile = fopen("out.c", "w");
-  else
-    *outputFile = fopen(argv[2], "w");
-
-  // 出力ファイルを開けなかった場合は終了
-  if (*outputFile == NULL) {
-    char *filename = (char *)argv[1];
-    outputError(401, filename);
-  }
-  return;
+  *wFile = fopen(wFilename, "w");
+  if (*wFile == NULL) outputError(401, wFilename);
 }
