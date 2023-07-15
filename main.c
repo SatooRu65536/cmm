@@ -6,10 +6,6 @@
 #define RESET "\x1b[0m"
 
 void outputError(int errNum, char *word);
-void write2File(FILE *outputFile, char *word);
-void put2File(FILE *outputFile, char c);
-void evalWord(char *word, int isFunc, FILE *outputFile);
-void parseLine(char *line, FILE *outputFile);
 void readFile(FILE *fp, FILE *outputFile);
 void setupFile(FILE **fp, FILE **outputFile, int argc, char const *argv[]);
 
@@ -177,6 +173,16 @@ void processFString(char *word, FILE *outputFile) {
   write2File(outputFile, vars);
 }
 
+void processIdend(char *word, FILE *outputFile) {
+  if (strcmp(word, "p") == 0 || strcmp(word, "print") == 0) {
+    write2File(outputFile, "printf");
+  } else if (strcmp(word, "s") == 0 || strcmp(word, "scan") == 0) {
+    write2File(outputFile, "scanf");
+  } else {
+    write2File(outputFile, word);
+  }
+}
+
 // 単語を評価する
 void evalWord(char *word, int isFunc, FILE *outputFile) {
   // f文字列の場合
@@ -191,14 +197,8 @@ void evalWord(char *word, int isFunc, FILE *outputFile) {
     return;
   }
 
-  // 関数名を変換する
-  if (strcmp(word, "p") == 0 || strcmp(word, "print") == 0) {
-    write2File(outputFile, "printf");
-  } else if (strcmp(word, "s") == 0 || strcmp(word, "scan") == 0) {
-    write2File(outputFile, "scanf");
-  } else {
-    write2File(outputFile, word);
-  }
+  // 関数名を変換, またはそのまま出力
+  processIdend(word, outputFile);
 }
 
 // 1行をパースする
