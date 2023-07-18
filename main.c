@@ -5,6 +5,8 @@
 #define RED "\x1b[31m"
 #define RESET "\x1b[0m"
 
+void runGCC(char *);
+int hasFrag(char *, char const *[]);
 void addIncluede(FILE *, FILE *);
 void outputError(int, char *);
 void readFile(FILE *, FILE *);
@@ -25,16 +27,24 @@ int main(int argc, char const *argv[]) {
 
   char *inputFileName;
   char *outputFileName = "out.c";
-  char *tmpFileName = "tmp";
+  char *tmpFileName = "/tmp/me.satooru.cmmtmp-c";
 
-  if (argc < 2) {
-    outputError(400, "ファイルが指定されていません.");
-  } else if (argc < 3) {
-    inputFileName = (char *)argv[1];
-  } else {
-    inputFileName = (char *)argv[1];
-    outputFileName = (char *)argv[2];
+  int hasInputFile = 0;
+
+  for (int i = 1; i < argc; i++) {
+    if (argv[i][0] != '-') {
+      if (hasInputFile == 0) {
+        inputFileName = (char *)argv[i];
+        hasInputFile = 1;
+      } else {
+        outputFileName = (char *)argv[i];
+        break;
+      }
+    }
   }
+
+  if (hasInputFile == 0) outputError(400, "ファイルが指定されていません.");
+  if (hasFrag("-r", argv) == 1) outputFileName = "/tmp/me.satooru.cmmout.c";
 
   // 入力ファイルとtmpファイルを開く
   setupFile(&inputFile, &tmpFile, inputFileName, tmpFileName);
@@ -56,9 +66,29 @@ int main(int argc, char const *argv[]) {
   fclose(outFile);
   fclose(tmpFile);
 
-  // tmpファイルを削除する
-  remove("tmp");
+  // 実行する
+  if (hasFrag("-r", argv)) runGCC(outputFileName);
 
+  return 0;
+}
+
+// gcc でコンパイルして実行する
+void runGCC(char *outputFileName) {
+  char command[256];
+  sprintf(command, "gcc %s -o %s", outputFileName, "/tmp/me.satooru.cmmtmp-bin");
+  system(command);
+  system("/tmp/me.satooru.cmmtmp-bin");
+}
+
+// frag が argv に含まれているかどうか
+int hasFrag(char *frag, char const *argv[]) {
+  int i = 0;
+  while (argv[i] != NULL) {
+    if (strstr(frag, argv[i]) != NULL) {
+      return 1;
+    }
+    i++;
+  }
   return 0;
 }
 
@@ -230,9 +260,13 @@ void checkLib(char *word) {
       isNeedStdio = 1;
     else if (strcmp(word, "print") == 0)
       isNeedStdio = 1;
+    else if (strcmp(word, "printf") == 0)
+      isNeedStdio = 1;
     else if (strcmp(word, "s") == 0)
       isNeedStdio = 1;
     else if (strcmp(word, "scan") == 0)
+      isNeedStdio = 1;
+    else if (strcmp(word, "scanf") == 0)
       isNeedStdio = 1;
 
     if (isNeedStdio == 1) return;

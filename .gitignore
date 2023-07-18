@@ -1,4 +1,4 @@
 *.out
-input.c
 out.c
 tmp
+cmm
