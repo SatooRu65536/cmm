@@ -43,7 +43,7 @@ int main(int argc, char const *argv[]) {
     }
   }
 
-  if (hasInputFile == 0) outputError(400, "ファイルが指定されていません.");
+  if (hasInputFile == 0) outputError(400, inputFileName);
   if (hasFrag("-r", argv) == 1) outputFileName = "/tmp/me.satooru.cmmout.c";
 
   // 入力ファイルとtmpファイルを開く
