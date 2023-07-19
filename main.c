@@ -9,7 +9,7 @@
 void outputHelp(void);
 void setFileName(int, const char *[], char **, char **);
 void runBuildCmd(char *, int);
-int hasFrag(char *, char const *[]);
+int hasFlag(char *, char const *[]);
 void addIncluede(FILE *, FILE *);
 void outputError(int, char *, int);
 void readFile(FILE *, FILE *);
@@ -32,7 +32,7 @@ int main(int argc, char const *argv[]) {
   char *outputFileName = "out.c";
   char *tmpFileName = "/tmp/me.satooru.cmmtmp-c";
 
-  if (hasFrag("-h", argv)) {
+  if (hasFlag("-h", argv)) {
     outputHelp();
     return 0;
   }
@@ -41,7 +41,7 @@ int main(int argc, char const *argv[]) {
   setFileName(argc, argv, &inputFileName, &outputFileName);
 
   // -r オプションがある時は出力ファイル名を変更する
-  if (hasFrag("-r", argv) == 1) outputFileName = "/tmp/me.satooru.cmmout.c";
+  if (hasFlag("-r", argv) == 1) outputFileName = "/tmp/me.satooru.cmmout.c";
 
   // 入力ファイルとtmpファイルを開く
   setupFile(&inputFile, &tmpFile, inputFileName, tmpFileName);
@@ -64,8 +64,8 @@ int main(int argc, char const *argv[]) {
   fclose(tmpFile);
 
   // -r オプションがある時は実行する
-  int useClang = hasFrag("-c", argv);
-  if (hasFrag("-r", argv)) runBuildCmd(outputFileName, useClang);
+  int useClang = hasFlag("-c", argv);
+  if (hasFlag("-r", argv)) runBuildCmd(outputFileName, useClang);
 
   return 0;
 }
@@ -124,12 +124,18 @@ void runBuildCmd(char *outFile, int useClang) {
   system("/tmp/me.satooru.cmmtmp-bin");
 }
 
-// frag が argv に含まれているかどうか
-int hasFrag(char *frag, char const *argv[]) {
+// flag が argv に含まれているかどうか
+int hasFlag(char *flag, char const *argv[]) {
   int i = 0;
   while (argv[i] != NULL) {
-    if (strstr(frag, argv[i]) != NULL) {
-      return 1;
+    // flag が完全一致するとき
+    if (strstr(flag, argv[i]) != NULL) return 1;
+
+    // -rf のとき -r と -f が含まれていると判定する
+    if (argv[i][0] == '-') {
+      for (int j = 1; argv[i][j] != '\0'; j++) {
+        if (argv[i][j] == flag[1]) return 1;
+      }
     }
     i++;
   }
