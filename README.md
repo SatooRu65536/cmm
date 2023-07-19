@@ -3,7 +3,7 @@
 **授業程度であれば**役に立たないこともないです.
 
 
-### インストール方法
+## インストール方法
 ```shell
 brew tap satooru65536/cmm
 brew install cmm
@@ -107,6 +107,9 @@ Main(Arg) {
 - floor関数
 - fabs関数
 - fmod関数
+
+## サンプルコード
+- [sample.c](sample.c)
 
 # LICENSE
 [MIT](./LICENSE)
