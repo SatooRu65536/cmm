@@ -6,14 +6,14 @@
 #define RESET "\x1b[0m"
 #define BOLD "\x1b[1m"
 
-void outputHelp(void);
-void setFileName(int, const char *[], char **, char **);
 void runBuildCmd(char *, int);
 int hasFlag(char *, char const *[]);
-void addIncluede(FILE *, FILE *);
+void outputHelp(void);
 void outputError(int, char *, int);
+void addIncluede(FILE *, FILE *);
 void readFile(FILE *, FILE *);
 void setupFile(FILE **, FILE **, char *, char *);
+void getFileName(int, const char *[], char **, char **);
 
 int lineNum = 0;
 int charNum = 0;
@@ -39,7 +39,7 @@ int main(int argc, char const *argv[]) {
   }
 
   // 入出力ファイル名を設定する
-  setFileName(argc, argv, &inputFileName, &outputFileName);
+  getFileName(argc, argv, &inputFileName, &outputFileName);
 
   // -r オプションがある時は出力ファイル名を変更する
   if (hasFlag("-r", argv) == 1) outputFileName = "/tmp/me.satooru.cmmout.c";
@@ -69,48 +69,6 @@ int main(int argc, char const *argv[]) {
   if (hasFlag("-r", argv)) runBuildCmd(outputFileName, useClang);
 
   return 0;
-}
-
-// ヘルプを表示する
-void outputHelp(void) {
-  printf("\n");
-  printf(BOLD "C-- Language\n" RESET);
-  printf("\n");
-  printf("Usage: cmm <options> [input file] [output file]\n");
-  printf("\n");
-  printf("Flags:\n");
-  printf("  -h ヘルプを表示する.\n");
-  printf("  -r 実行する.\n");
-  printf("  -c clangコマンドでビルドする.\n");
-  printf("\n");
-}
-
-// 入出力ファイル名を設定する
-void setFileName(int argc, const char *argv[], char **inFile, char **outFile) {
-  int hasInputFile = 0;
-  // 引数を解析する
-  for (int i = 1; i < argc; i++) {
-    // オプションではない時
-    if (argv[i][0] != '-') {
-      if (hasInputFile == 0) {
-        // 入力ファイル名を設定する
-        *inFile = (char *)argv[i];
-        fileName = (char *)argv[i];
-        hasInputFile = 1;
-      } else {
-        // 出力ファイル名を設定する
-        *outFile = (char *)argv[i];
-        return;
-      }
-    }
-  }
-
-  // 入力ファイルがなかった場合
-  if (hasInputFile == 0) {
-    outputError(402, NULL, 0);
-    outputHelp();
-    exit(0);
-  }
 }
 
 // gcc でコンパイルして実行する
@@ -144,23 +102,18 @@ int hasFlag(char *flag, char const *argv[]) {
   return 0;
 }
 
-// include を追加し、出力ファイルを作成する
-void addIncluede(FILE *outFile, FILE *tmpFile) {
-  // 追記するデータをtmpファイルに書き込む
-  if (isNeedStdio) fputs("#include <stdio.h>\n", outFile);
-  if (isNeedStdlib) fputs("#include <stdlib.h>\n", outFile);
-  if (isNeedString) fputs("#include <string.h>\n", outFile);
-  if (isNeedMath) fputs("#include <math.h>\n", outFile);
-
-  if (isNeedStdio || isNeedStdlib || isNeedString || isNeedMath) {
-    fputs("\n", outFile);
-  }
-
-  // tmpファイルのデータを出力ファイルに書き込む
-  char line[256];
-  while (fgets(line, sizeof(line), tmpFile) != NULL) {
-    fputs(line, outFile);
-  }
+// ヘルプを表示する
+void outputHelp(void) {
+  printf("\n");
+  printf(BOLD "C-- Language\n" RESET);
+  printf("\n");
+  printf("Usage: cmm <options> [input file] [output file]\n");
+  printf("\n");
+  printf("Flags:\n");
+  printf("  -h ヘルプを表示する.\n");
+  printf("  -r 実行する.\n");
+  printf("  -c clangコマンドでビルドする.\n");
+  printf("\n");
 }
 
 // エラーを出力して終了する
@@ -208,6 +161,25 @@ void write2File(FILE *file, char *word) { fprintf(file, "%s", word); }
 
 // ファイルに文字を書き込む
 void put2File(FILE *file, char c) { fprintf(file, "%c", c); }
+
+// include を追加し、出力ファイルを作成する
+void addIncluede(FILE *outFile, FILE *tmpFile) {
+  // 追記するデータをtmpファイルに書き込む
+  if (isNeedStdio) fputs("#include <stdio.h>\n", outFile);
+  if (isNeedStdlib) fputs("#include <stdlib.h>\n", outFile);
+  if (isNeedString) fputs("#include <string.h>\n", outFile);
+  if (isNeedMath) fputs("#include <math.h>\n", outFile);
+
+  if (isNeedStdio || isNeedStdlib || isNeedString || isNeedMath) {
+    fputs("\n", outFile);
+  }
+
+  // tmpファイルのデータを出力ファイルに書き込む
+  char line[256];
+  while (fgets(line, sizeof(line), tmpFile) != NULL) {
+    fputs(line, outFile);
+  }
+}
 
 // 文字列の変数名をフォーマット指定子に置き換える
 void replaceString(char *word, char *str) {
@@ -512,4 +484,32 @@ void setupFile(FILE **rFile, FILE **wFile, char *rFilename, char *wFilename) {
   // 出力ファイルを開く
   *wFile = fopen(wFilename, "w");
   if (*wFile == NULL) outputError(401, wFilename, 1);
+}
+
+// 入出力ファイル名を設定する
+void getFileName(int argc, const char *argv[], char **inFile, char **outFile) {
+  int hasInputFile = 0;
+  // 引数を解析する
+  for (int i = 1; i < argc; i++) {
+    // オプションではない時
+    if (argv[i][0] != '-') {
+      if (hasInputFile == 0) {
+        // 入力ファイル名を設定する
+        *inFile = (char *)argv[i];
+        fileName = (char *)argv[i];
+        hasInputFile = 1;
+      } else {
+        // 出力ファイル名を設定する
+        *outFile = (char *)argv[i];
+        return;
+      }
+    }
+  }
+
+  // 入力ファイルがなかった場合
+  if (hasInputFile == 0) {
+    outputError(402, NULL, 0);
+    outputHelp();
+    exit(0);
+  }
 }
