@@ -17,6 +17,7 @@ void setupFile(FILE **, FILE **, char *, char *);
 
 int lineNum = 0;
 int charNum = 0;
+char *fileName = NULL;
 
 int isNeedStdio = 0;
 int isNeedStdlib = 0;
@@ -94,6 +95,7 @@ void setFileName(int argc, const char *argv[], char **inFile, char **outFile) {
       if (hasInputFile == 0) {
         // 入力ファイル名を設定する
         *inFile = (char *)argv[i];
+        fileName = (char *)argv[i];
         hasInputFile = 1;
       } else {
         // 出力ファイル名を設定する
@@ -197,7 +199,7 @@ void outputError(int errNum, char *word, int isExit) {
   }
 
   if (lineNum != 0) {
-    printf("line %d:%d\n", lineNum, charNum);
+    printf("%s:%d:%d\n", fileName, lineNum, charNum);
     printf(RESET "  %s\n\n", word);
   } else {
     printf(RESET "\n");
@@ -443,12 +445,14 @@ void parseLine(char *line, FILE *tmpFile) {
       case '\0':
         word[i] = '\0';
         evalWord(word, 0, tmpFile);
+        charNum = 0;
         return;
 
       case '\n':
         word[i] = '\0';
         evalWord(word, 0, tmpFile);
         write2File(tmpFile, "\n");
+        charNum = 0;
         return;
 
       case '"':
@@ -456,6 +460,7 @@ void parseLine(char *line, FILE *tmpFile) {
         word[i] = c;
         i++;
         line++;
+        charNum++;
         while (1) {
           c = *line;
           word[i] = c;
@@ -464,6 +469,7 @@ void parseLine(char *line, FILE *tmpFile) {
             break;
           }
           line++;
+          charNum++;
         }
         break;
 
@@ -487,7 +493,9 @@ void parseLine(char *line, FILE *tmpFile) {
         break;
     }
     line++;
+    charNum++;
   }
+  charNum = 0;
 }
 
 // ファイルを読み込む
