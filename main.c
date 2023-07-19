@@ -344,12 +344,6 @@ void checkLib(char *word) {
       isNeedMath = 1;
     else if (strcmp(word, "atan2") == 0)
       isNeedMath = 1;
-    else if (strcmp(word, "sinh") == 0)
-      isNeedMath = 1;
-    else if (strcmp(word, "cosh") == 0)
-      isNeedMath = 1;
-    else if (strcmp(word, "tanh") == 0)
-      isNeedMath = 1;
     else if (strcmp(word, "exp") == 0)
       isNeedMath = 1;
     else if (strcmp(word, "log") == 0)
@@ -363,10 +357,6 @@ void checkLib(char *word) {
     else if (strcmp(word, "ceil") == 0)
       isNeedMath = 1;
     else if (strcmp(word, "floor") == 0)
-      isNeedMath = 1;
-    else if (strcmp(word, "fabs") == 0)
-      isNeedMath = 1;
-    else if (strcmp(word, "fmod") == 0)
       isNeedMath = 1;
 
     if (isNeedMath == 1) return;
