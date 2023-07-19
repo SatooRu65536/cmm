@@ -4,11 +4,14 @@
 
 #define RED "\x1b[31m"
 #define RESET "\x1b[0m"
+#define BOLD "\x1b[1m"
 
-void runGCC(char *);
+void outputHelp(void);
+void setFileName(int, const char *[], char **, char **);
+void runBuildCmd(char *, int);
 int hasFrag(char *, char const *[]);
 void addIncluede(FILE *, FILE *);
-void outputError(int, char *);
+void outputError(int, char *, int);
 void readFile(FILE *, FILE *);
 void setupFile(FILE **, FILE **, char *, char *);
 
@@ -29,21 +32,15 @@ int main(int argc, char const *argv[]) {
   char *outputFileName = "out.c";
   char *tmpFileName = "/tmp/me.satooru.cmmtmp-c";
 
-  int hasInputFile = 0;
-
-  for (int i = 1; i < argc; i++) {
-    if (argv[i][0] != '-') {
-      if (hasInputFile == 0) {
-        inputFileName = (char *)argv[i];
-        hasInputFile = 1;
-      } else {
-        outputFileName = (char *)argv[i];
-        break;
-      }
-    }
+  if (hasFrag("-h", argv)) {
+    outputHelp();
+    return 0;
   }
 
-  if (hasInputFile == 0) outputError(400, inputFileName);
+  // 入出力ファイル名を設定する
+  setFileName(argc, argv, &inputFileName, &outputFileName);
+
+  // -r オプションがある時は出力ファイル名を変更する
   if (hasFrag("-r", argv) == 1) outputFileName = "/tmp/me.satooru.cmmout.c";
 
   // 入力ファイルとtmpファイルを開く
@@ -66,17 +63,64 @@ int main(int argc, char const *argv[]) {
   fclose(outFile);
   fclose(tmpFile);
 
-  // 実行する
-  if (hasFrag("-r", argv)) runGCC(outputFileName);
+  // -r オプションがある時は実行する
+  int useClang = hasFrag("-c", argv);
+  if (hasFrag("-r", argv)) runBuildCmd(outputFileName, useClang);
 
   return 0;
 }
 
+// ヘルプを表示する
+void outputHelp(void) {
+  printf("\n");
+  printf(BOLD "C-- Language\n" RESET);
+  printf("\n");
+  printf("Usage: cmm <options> [input file] [output file]\n");
+  printf("\n");
+  printf("Flags:\n");
+  printf("  -h ヘルプを表示する.\n");
+  printf("  -r 実行する.\n");
+  printf("  -c clangコマンドでビルドする.\n");
+  printf("\n");
+}
+
+// 入出力ファイル名を設定する
+void setFileName(int argc, const char *argv[], char **inFile, char **outFile) {
+  int hasInputFile = 0;
+  // 引数を解析する
+  for (int i = 1; i < argc; i++) {
+    // オプションではない時
+    if (argv[i][0] != '-') {
+      if (hasInputFile == 0) {
+        // 入力ファイル名を設定する
+        *inFile = (char *)argv[i];
+        hasInputFile = 1;
+      } else {
+        // 出力ファイル名を設定する
+        *outFile = (char *)argv[i];
+        return;
+      }
+    }
+  }
+
+  // 入力ファイルがなかった場合
+  if (hasInputFile == 0) {
+    outputError(402, NULL, 0);
+    outputHelp();
+    exit(0);
+  }
+}
+
 // gcc でコンパイルして実行する
-void runGCC(char *outputFileName) {
-  char command[256];
-  sprintf(command, "gcc %s -o %s", outputFileName, "/tmp/me.satooru.cmmtmp-bin");
-  system(command);
+void runBuildCmd(char *outFile, int useClang) {
+  char cmd[256];
+
+  if (useClang)
+    sprintf(cmd, "clang %s -o %s", outFile, "/tmp/me.satooru.cmmtmp-bin");
+  else
+    sprintf(cmd, "gcc %s -o %s", outFile, "/tmp/me.satooru.cmmtmp-bin");
+
+  system(cmd);
   system("/tmp/me.satooru.cmmtmp-bin");
 }
 
@@ -112,7 +156,7 @@ void addIncluede(FILE *outFile, FILE *tmpFile) {
 }
 
 // エラーを出力して終了する
-void outputError(int errNum, char *word) {
+void outputError(int errNum, char *word, int isExit) {
   printf(RED);
   switch (errNum) {
     case 100:
@@ -137,6 +181,10 @@ void outputError(int errNum, char *word) {
       printf("       ファイル名: %s\n", word);
       break;
 
+    case 402:
+      printf("Error: 入力ファイルを指定してください.\n");
+      break;
+
     default:
       printf("Error: エラー内容が未定義です.\n");
       break;
@@ -149,7 +197,7 @@ void outputError(int errNum, char *word) {
     printf(RESET "\n");
   }
 
-  exit(1);
+  if (isExit) exit(1);
 }
 
 // ファイルに文字列を書き込む
@@ -176,20 +224,20 @@ void replaceString(char *word, char *str) {
       while (1) {
         c = word[i];
         i++;
-        if (c == '}') outputError(101, word);
+        if (c == '}') outputError(101, word, 1);
         if (c == ':') break;
       }
 
       char f = 0;
       char format[5] = {'\0'};
 
-      if (word[i] == '}') outputError(102, word);
+      if (word[i] == '}') outputError(102, word, 1);
       while (1) {
         c = word[i];
         format[f] = c;
 
         if (c == '}') break;
-        if (c == '\0') outputError(100, word);
+        if (c == '\0') outputError(100, word, 1);
 
         f++;
         i++;
@@ -228,7 +276,7 @@ void pickupVariable(char *word, char *vars) {
             c = word[i];
             i++;
 
-            if (c == '\0') outputError(100, word);
+            if (c == '\0') outputError(100, word, 1);
           }
           break;
         }
@@ -449,9 +497,9 @@ void readFile(FILE *fp, FILE *tmpFile) {
 void setupFile(FILE **rFile, FILE **wFile, char *rFilename, char *wFilename) {
   // ファイルを開く
   *rFile = fopen(rFilename, "r");
-  if (*rFile == NULL) outputError(400, rFilename);
+  if (*rFile == NULL) outputError(400, rFilename, 1);
 
   // 出力ファイルを開く
   *wFile = fopen(wFilename, "w");
-  if (*wFile == NULL) outputError(401, wFilename);
+  if (*wFile == NULL) outputError(401, wFilename, 1);
 }
