@@ -13,13 +13,15 @@ brew install cmm
 ### コンパイル
 c言語のファイルを出力します.
 ```shell
-cmm [options] <input> <output>
+cmm <options> [input file] [output file]
 ```
-`<input>` は入力するファイル名(必須)  
-`<output>` は出力するファイル名(省略可)
+`[input file]` は入力するファイル名(必須)  
+`[output file]` は出力するファイル名(省略可)
 
 ### オプション
+- `-h` : ヘルプを表示します.
 - `-r` : 実行までします. ファイルは出力されません.
+- `-c` : clangでコンパイルします. -r オプションと同時に使用してください.
 
 
 ## 構文
