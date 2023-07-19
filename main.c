@@ -10,6 +10,7 @@ void runBuildCmd(char *, int);
 int hasFlag(char *, char const *[]);
 void outputHelp(void);
 void outputError(int, char *, int);
+void copy2File(FILE *, FILE *);
 void addIncluede(FILE *, FILE *);
 void readFile(FILE *, FILE *);
 void setupFile(FILE **, FILE **, char *, char *);
@@ -59,6 +60,9 @@ int main(int argc, char const *argv[]) {
 
   // inclue　を追加する
   addIncluede(outFile, tmpFile);
+
+  // tmpファイルから出力ファイルにコピーする
+  copy2File(tmpFile, outFile);
 
   // ファイルを閉じる
   fclose(outFile);
@@ -133,7 +137,9 @@ void outputError(int errNum, char *word, int isExit) {
 
     case 102:
       printf(BOLD "%s:%d:%d " RESET, fileName, lineNum, charNum);
-      printf(RED "Error: f文字列中でフォーマット演算子が指定されていません.\n" RESET);
+      printf(
+          RED
+          "Error: f文字列中でフォーマット演算子が指定されていません.\n" RESET);
       break;
 
     case 400:
@@ -164,22 +170,24 @@ void write2File(FILE *file, char *word) { fprintf(file, "%s", word); }
 // ファイルに文字を書き込む
 void put2File(FILE *file, char c) { fprintf(file, "%c", c); }
 
+// tmpファイルから出力ファイルにコピーする
+void copy2File(FILE *origin, FILE *duplicate) {
+  char line[256];
+  while (fgets(line, sizeof(line), origin) != NULL) {
+    write2File(duplicate, line);
+  }
+}
+
 // include を追加し、出力ファイルを作成する
 void addIncluede(FILE *outFile, FILE *tmpFile) {
   // 追記するデータをtmpファイルに書き込む
-  if (isNeedStdio) fputs("#include <stdio.h>\n", outFile);
-  if (isNeedStdlib) fputs("#include <stdlib.h>\n", outFile);
-  if (isNeedString) fputs("#include <string.h>\n", outFile);
-  if (isNeedMath) fputs("#include <math.h>\n", outFile);
+  if (isNeedStdio) write2File(outFile, "#include <stdio.h>\n");
+  if (isNeedStdlib) write2File(outFile, "#include <stdlib.h>\n");
+  if (isNeedString) write2File(outFile, "#include <string.h>\n");
+  if (isNeedMath) write2File(outFile, "#include <math.h>\n");
 
   if (isNeedStdio || isNeedStdlib || isNeedString || isNeedMath) {
-    fputs("\n", outFile);
-  }
-
-  // tmpファイルのデータを出力ファイルに書き込む
-  char line[256];
-  while (fgets(line, sizeof(line), tmpFile) != NULL) {
-    fputs(line, outFile);
+    put2File(outFile, '\n');
   }
 }
 
