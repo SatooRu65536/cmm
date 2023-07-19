@@ -219,18 +219,21 @@ void replaceString(char *word, char *str) {
       if (word[i] == '}') outputError(102, word, 1);
       while (1) {
         c = word[i];
-        format[f] = c;
+        if (c != ' ') {
+          format[f] = c;
+          f++;
+        }
 
         if (c == '}') break;
         if (c == '\0') outputError(100, word, 1);
-
-        f++;
         i++;
       }
 
       str[j] = '%';
-      for (int k = 0; k < f; k++) str[j + k + 1] = format[k];
-      j += f + 1;
+      for (int k = 0; k < f; k++) {
+        str[j + k + 1] = format[k];
+      }
+      j += f;
     }
     i++;
   }
