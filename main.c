@@ -165,44 +165,39 @@ void addIncluede(FILE *outFile, FILE *tmpFile) {
 
 // エラーを出力して終了する
 void outputError(int errNum, char *word, int isExit) {
-  printf(RED);
   switch (errNum) {
     case 100:
-      printf("Error: f文字列中の {} が閉じられていません.\n");
+      printf(BOLD "%s:%d:%d " RESET, fileName, lineNum, charNum);
+      printf(RED "Error: f文字列中の {} が閉じられていません.\n" RESET);
       break;
 
     case 101:
-      printf("Error: f文字列中の {} 内に : がありません.\n");
+      printf(BOLD "%s:%d:%d " RESET, fileName, lineNum, charNum);
+      printf(RED "Error: f文字列中の {} 内に : がありません.\n" RESET);
       break;
 
     case 102:
-      printf("Error: f文字列中でフォーマット演算子が指定されていません.\n");
+      printf(BOLD "%s:%d:%d " RESET, fileName, lineNum, charNum);
+      printf(RED "Error: f文字列中でフォーマット演算子が指定されていません.\n" RESET);
       break;
 
     case 400:
-      printf("Error: ファイルが開けません.\n");
+      printf(RED "Error: ファイルが開けません.\n" RESET);
       printf("       ファイル名: %s\n", word);
       break;
 
     case 401:
-      printf("Error: 出力ファイルが開けません.\n");
+      printf(RED "Error: 出力ファイルが開けません.\n" RESET);
       printf("       ファイル名: %s\n", word);
       break;
 
     case 402:
-      printf("Error: 入力ファイルを指定してください.\n");
+      printf(RED "Error: 入力ファイルを指定してください.\n" RESET);
       break;
 
     default:
-      printf("Error: エラー内容が未定義です.\n");
+      printf(RED "Error: エラー内容が未定義です.\n" RESET);
       break;
-  }
-
-  if (lineNum != 0) {
-    printf("%s:%d:%d\n", fileName, lineNum, charNum);
-    printf(RESET "  %s\n\n", word);
-  } else {
-    printf(RESET "\n");
   }
 
   if (isExit) exit(1);
