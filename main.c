@@ -413,6 +413,7 @@ void processIdend(char *word, FILE *tmpFile) {
 
 // 単語を評価する
 void evalWord(char *word, int isFunc, FILE *tmpFile) {
+  printf("word: %s\n", word);
   // f文字列の場合
   if (word[0] == 'f' && word[1] == '"') {
     processFString(word, tmpFile);
@@ -474,6 +475,7 @@ void parseLine(char *line, FILE *tmpFile) {
       case '{':
       case '}':
       case ',':
+      case ';':
         word[i] = '\0';
         evalWord(word, isFunc, tmpFile);
         put2File(tmpFile, c);
