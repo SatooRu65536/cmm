@@ -1,143 +1,75 @@
-# C-- Compiler
+# C-- Language / Compiler
 `C--` は C言語 をより単純に書ける **スーパーセット言語(笑)** で、  
 `C-- Compiler` は そんな `C--` をコンパイルするツールです.
 
+C--の特徴は以下の通りです.
+- `f文字列` が使える
+- `printf` `scanf` を `print` `scan` と簡略化できる
+- main関数を簡略化できる
+- (一部) `#include` が自動で挿入される
+
 **授業程度であれば** 役に立たないこともないです.
 
-
 ## セットアップ
-### コンパイルする
-コンパイル時は `make` を使用してください.
+`make` コマンドか `brew` でインストールしてください.
 
 ```shell
 make
-```
-すると `cmm` という実行ファイルが生成されるので、  
-これを使用してください.
-
-
-### brew からインストールする
-brew でインストールすることもできます.
-```shell
+# or 
 brew tap satooru65536/cmm
 brew install cmm
 ```
 
-
 ## 実行方法
-デフォルトでは、C言語のファイルを出力します.
-
-```shell
-cmm <options> [input file] [output file]
-```
-
-`[input file]` は入力するファイル名(必須)  
-`[output file]` は出力するファイル名(省略可)
-
-### オプション
-- `-h` : ヘルプを表示します.
-- `-r` : プログラムを実行します. ファイルは出力されません.
-- `-c` : コンパイルに clang を使用します. -r オプションと共に使用してください.
-
-`-rc` のようにまとめて書くこともできます.
-
-
-
-## 構文エラー
-エラー内容と位置も表示されるようになっています.  
-
-```c
-printf(f"num is {num:d");
-```
-
-> **main.c:1:23** <span style="color:red;">Error: f文字列中の {} が閉じられていません.</span>
-
-
-## C--構文
-### f文字列
-文字列の前に `f` をつけると、文字列中で変数を展開できます.  
-展開する変数は `{}` で囲み、型を `:` の後で指定します.
-
-```c
-printf(f"num={num:d}\n");
-scan(f"{n:d} {m:d}");
-```
-
-### print文
-`print` 文は `printf` と同じです.  
-これでPython後でも書き間違えません!!  
-もっと書く量を減らしたい場合は `p` でもOKです.
-
-```c
-print("Hello, World!\n");
-p("Hello, World!\n");
-```
-
-### scan文
-`scan` 文も `print` と同様です.
-
-```c
-scan("%d %d", &n, &m);
-s("%d %d", &n, &m);
-```
-
-### main関数
-ここまで来たら `main` 関数も省略したくなりますよね.
-
-```c
-Main(int argc, char const *argv[]) {
-    // コード
-}
-```
-
-main関数の引数も大体同じなので省略しましょう.
-
-```c
+以下のような C-- で書かれた `sample.c` を用意します.
+```c:sample.c
 Main(Arg) {
-    // コード
+  double r;
+  double area;
+
+  p("Input radius: ");
+  s(f"{&r:lf}");
+
+  area = r * r * M_PI;
+  print(f"Area = {area:lf}\n");
+
+  return 0;
 }
 ```
 
-### include
-`include` も書くのが面倒!!  
-授業程度であれば書かなくても(大体は)勝手に `#include <xxx.h>` を挿入してくれます.  
-対応しているライブラリと関数(変数)は以下の通りです.
+コマンドを実行すると
+```shell
+cmm sample.c out.c
+```
 
-#### stdio.h
-- p関数
-- print関数
-- print関数
+以下のような c言語 のファイル(out.c) を生成します.
+```c:out.c
+#include <stdio.h>
+#include <math.h>
 
-#### stdlib.h
-- rand関数
-- random関数
-- srand関数
+int main(int argc, char const *argv[]) {
+  double r;
+  double area;
 
-#### string.h
-- strlen関数
-- strcmp関数
-- strcpy関数
-- strcat関数
+  printf("Input radius: ");
+  scanf("%lf", &r);
 
-#### math.h
-- M_PI
-- sin関数
-- cos関数
-- tan関数
-- asin関数
-- acos関数
-- atan関数
-- atan2関数
-- exp関数
-- log関数
-- log10関数
-- pow関数
-- sqrt関数
-- ceil関数
-- floor関数
+  area = r * r * M_PI;
+  printf("Area = %lf\n", area);
 
-## サンプルコード
-- [sample.c](sample.c)
+  return 0;
+}
+```
 
-# LICENSE
-[MIT](./LICENSE)
+また `-r` オプションをつけると実行まで行えます.
+```shell
+cmm -r sample.c
+```
+> Input radius: 10  
+> Area = 314.159265  
+
+## 詳細
+詳細は [DETAIL.md](DETAIL.md) を参照してください.
+
+## ライセンス
+[MIT License](LICENSE)
