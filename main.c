@@ -114,9 +114,9 @@ void outputHelp(void) {
   printf("Usage: cmm <options> [input file] [output file]\n");
   printf("\n");
   printf("Flags:\n");
-  printf("  -h: ヘルプを表示する.\n");
-  printf("  -r: 実行する.\n");
-  printf("  -c: clangコマンドでビルドする.\n");
+  printf("  -h: ヘルプを表示します.\n");
+  printf("  -r: プログラムを実行します. ファイルは出力されません.\n");
+  printf("  -c: コンパイルに clang を使用します. -r オプションと共に使用してください.\n");
   printf("\n");
   printf("https://github.com/SatooRu65536/cmm-compiler#readme\n");
   printf("\n");
