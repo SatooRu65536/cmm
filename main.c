@@ -286,7 +286,7 @@ void pickupVariable(char *word, char *vars) {
 }
 
 // f文字列を処理する
-void processFString(char *word, FILE *tmpFile) {
+void processFString(FILE *tmpFile, char *word) {
   char str[256] = {'\0'};
   replaceString(word, str);
   write2File(tmpFile, str);
@@ -374,7 +374,7 @@ void checkLib(char *word) {
 }
 
 // 識別子を処理する
-void processIdend(char *word, FILE *tmpFile) {
+void processIdend(FILE *tmpFile, char *word) {
   if (strcmp(word, "p") == 0 || strcmp(word, "print") == 0) {
     write2File(tmpFile, "printf");
   } else if (strcmp(word, "s") == 0 || strcmp(word, "scan") == 0) {
@@ -391,10 +391,10 @@ void processIdend(char *word, FILE *tmpFile) {
 }
 
 // 単語を評価する
-void evalWord(char *word, int isFunc, FILE *tmpFile) {
+void evalWord(FILE *tmpFile, char *word, int isFunc) {
   // f文字列の場合
   if (word[0] == 'f' && word[1] == '"') {
-    processFString(word, tmpFile);
+    processFString(tmpFile, word);
     return;
   }
 
@@ -406,7 +406,7 @@ void evalWord(char *word, int isFunc, FILE *tmpFile) {
   }
 
   // 関数名を変換, またはそのまま出力
-  processIdend(word, tmpFile);
+  processIdend(tmpFile, word);
 }
 
 // 文字列に追加する
@@ -416,7 +416,7 @@ void assignChar2Word(char word[], char c, int *i) {
 }
 
 // 1行をパースする
-void parseLine(char *line, FILE *tmpFile) {
+void parseLine(FILE *tmpFile, char *line) {
   int i = 0;
   char word[256] = {'\0'};
 
@@ -429,7 +429,7 @@ void parseLine(char *line, FILE *tmpFile) {
       case '\0':
       case '\n':
         word[i] = '\0';
-        evalWord(word, 0, tmpFile);
+        evalWord(tmpFile, word, 0);
         charNum = 0;
         if (c == '\n') write2File(tmpFile, "\n");
         return;
@@ -454,7 +454,7 @@ void parseLine(char *line, FILE *tmpFile) {
       case ',':
       case ';':
         word[i] = '\0';
-        evalWord(word, isFunc, tmpFile);
+        evalWord(tmpFile, word, isFunc);
         put2File(tmpFile, c);
         i = 0;
         break;
@@ -472,7 +472,7 @@ void readFile(FILE *fp, FILE *tmpFile) {
   // 1行ずつ読み込む
   char line[256];
   while (lineNum++, fgets(line, sizeof(line), fp) != NULL) {
-    parseLine(line, tmpFile);
+    parseLine(tmpFile, line);
   }
 }
 
