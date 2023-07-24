@@ -203,46 +203,31 @@ void replaceString(char *word, char *str) {
   // f"{hoge:d} {fuga:lf}" -> "%d %d"
   int i = 1;
   int j = 0;
-
-  while (1) {
-    char c = word[i];
-    if (c == '\0') break;
-
+  char c;
+  while (c = word[i++], c != '\0') {
     if (c != '{') {
-      str[j] = c;
-      j++;
-    } else {
-      i++;
-      while (1) {
-        c = word[i];
-        i++;
-        if (c == '}') outputError(101, word, 1);
-        if (c == ':') break;
-      }
-
-      char f = 0;
-      char format[5] = {'\0'};
-
-      if (word[i] == '}') outputError(102, word, 1);
-      while (1) {
-        c = word[i];
-        if (c != ' ') {
-          format[f] = c;
-          f++;
-        }
-
-        if (c == '}') break;
-        if (c == '\0') outputError(100, word, 1);
-        i++;
-      }
-
-      str[j] = '%';
-      for (int k = 0; k < f; k++) {
-        str[j + k + 1] = format[k];
-      }
-      j += f;
+      str[j++] = c;
+      continue;
     }
-    i++;
+
+    while (c = word[i++], c != ':') {
+      if (c == '}') outputError(101, word, 1);
+    }
+
+    char f = 0;
+    char format[5] = {'\0'};
+
+    while (c = word[i++], 1) {
+      if (c != ' ') format[f++] = c;
+      if (c == '}') break;
+      if (c == '\0') outputError(100, word, 1);
+    }
+
+    str[j] = '%';
+    for (int k = 0; k < f; k++) {
+      str[j + k + 1] = format[k];
+    }
+    j += f;
   }
 }
 
@@ -251,37 +236,26 @@ void pickupVariable(char *word, char *vars) {
   // f"{hoge:d} {fuga:lf}" -> , hoge, fuga
   int i = 0;
   int j = 0;
+  char c;
 
-  while (1) {
-    char c = word[i];
-    if (c == '\0') {
-      break;
+  while (c = word[i++], c != '\0') {
+    if (c != '{') continue;
+
+    vars[j] = ',';
+    vars[j + 1] = ' ';
+    j += 2;
+
+    // : より前の文字を取り出す
+    while (c = word[i++], 1) {
+      if (c == ':') break;
+      if (c == '\0') outputError(101, word, 1);
+      vars[j++] = c;
     }
 
-    if (c == '{') {
-      i++;
-      vars[j] = ',';
-      vars[j + 1] = ' ';
-      j += 2;
-      while (1) {
-        c = word[i];
-
-        if (c == ':') {
-          while (c != '}') {
-            c = word[i];
-            i++;
-
-            if (c == '\0') outputError(100, word, 1);
-          }
-          break;
-        }
-
-        vars[j] = c;
-        i++;
-        j++;
-      }
+    // : より後の文字を取り出す
+    while (c = word[i++], c != '}') {
+      if (c == '\0') outputError(100, word, 1);
     }
-    i++;
   }
 }
 
