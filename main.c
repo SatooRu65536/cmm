@@ -210,6 +210,7 @@ void replaceString(char *word, char *str) {
       continue;
     }
 
+    // : より前の文字を無視
     while (c = word[i++], c != ':') {
       if (c == '}') outputError(101, word, 1);
     }
@@ -217,12 +218,17 @@ void replaceString(char *word, char *str) {
     char f = 0;
     char format[5] = {'\0'};
 
+    // : より後の文字を取り出す
     while (c = word[i++], 1) {
       if (c != ' ') format[f++] = c;
       if (c == '}') break;
       if (c == '\0') outputError(100, word, 1);
     }
 
+    // フォーマット指定子がない場合
+    if (f < 2) outputError(102, word, 1);
+
+    // フォーマット指定子を追加
     str[j] = '%';
     for (int k = 0; k < f; k++) {
       str[j + k + 1] = format[k];
@@ -252,7 +258,7 @@ void pickupVariable(char *word, char *vars) {
       vars[j++] = c;
     }
 
-    // : より後の文字を取り出す
+    // : より後の文字を無視
     while (c = word[i++], c != '}') {
       if (c == '\0') outputError(100, word, 1);
     }
