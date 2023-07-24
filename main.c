@@ -409,46 +409,40 @@ void evalWord(char *word, int isFunc, FILE *tmpFile) {
   processIdend(word, tmpFile);
 }
 
+// 文字列に追加する
+void assignChar2Word(char word[], char c, int *i) {
+  word[*i] = c;
+  *i += 1;
+}
+
 // 1行をパースする
 void parseLine(char *line, FILE *tmpFile) {
   int i = 0;
   char word[256] = {'\0'};
 
   while (1) {
-    char c = *line;
+    char c = *line++;
     int isFunc = 0;
+    charNum++;
 
     switch (c) {
       case '\0':
-        word[i] = '\0';
-        evalWord(word, 0, tmpFile);
-        charNum = 0;
-        return;
-
       case '\n':
         word[i] = '\0';
         evalWord(word, 0, tmpFile);
-        write2File(tmpFile, "\n");
         charNum = 0;
+        if (c == '\n') write2File(tmpFile, "\n");
         return;
 
       case '"':
         // 次の " までを文字列として扱う
-        word[i] = c;
-        i++;
-        line++;
-        charNum++;
-        while (1) {
-          c = *line;
-          // 文字列が閉じられていないとき
+        assignChar2Word(word, c, &i);
+        do {
+          c = *line++;
+          assignChar2Word(word, c, &i);
+          // " がない場合
           if (c == '\0') outputError(103, word, 1);
-          word[i] = c;
-          i++;
-          if (c == '"') break;
-          line++;
-          // line を超えたらエラー
-          charNum++;
-        }
+        } while (c != '"');
         break;
 
       case '(':
@@ -466,12 +460,9 @@ void parseLine(char *line, FILE *tmpFile) {
         break;
 
       default:
-        word[i] = c;
-        i++;
+        assignChar2Word(word, c, &i);
         break;
     }
-    line++;
-    charNum++;
   }
   charNum = 0;
 }
@@ -480,8 +471,7 @@ void parseLine(char *line, FILE *tmpFile) {
 void readFile(FILE *fp, FILE *tmpFile) {
   // 1行ずつ読み込む
   char line[256];
-  while (fgets(line, sizeof(line), fp) != NULL) {
-    lineNum++;
+  while (lineNum++, fgets(line, sizeof(line), fp) != NULL) {
     parseLine(line, tmpFile);
   }
 }
