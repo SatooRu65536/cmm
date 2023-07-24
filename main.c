@@ -116,7 +116,9 @@ void outputHelp(void) {
   printf("Flags:\n");
   printf("  -h: ヘルプを表示します.\n");
   printf("  -r: プログラムを実行します. ファイルは出力されません.\n");
-  printf("  -c: コンパイルに clang を使用します. -r オプションと共に使用してください.\n");
+  printf(
+      "  -c: コンパイルに clang を使用します. "
+      "-r オプションと共に使用してください.\n");
   printf("\n");
   printf("https://github.com/SatooRu65536/cmm-compiler#readme\n");
   printf("\n");
@@ -140,6 +142,11 @@ void outputError(int errNum, char *word, int isExit) {
       printf(
           RED
           "Error: f文字列中でフォーマット演算子が指定されていません.\n" RESET);
+      break;
+
+    case 103:
+      printf(BOLD "%s:%d:%d " RESET, fileName, lineNum, charNum);
+      printf(RED "Error: 文字列の \" が閉じられていません.\n" RESET);
       break;
 
     case 400:
@@ -433,12 +440,13 @@ void parseLine(char *line, FILE *tmpFile) {
         charNum++;
         while (1) {
           c = *line;
+          // 文字列が閉じられていないとき
+          if (c == '\0') outputError(103, word, 1);
           word[i] = c;
           i++;
-          if (c == '"') {
-            break;
-          }
+          if (c == '"') break;
           line++;
+          // line を超えたらエラー
           charNum++;
         }
         break;
